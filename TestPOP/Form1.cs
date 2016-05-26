@@ -7,6 +7,9 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using Limilabs.Mail;
+using Limilabs.Client.IMAP;
+using ImapX;
 
 namespace TestPOP
 {
@@ -36,11 +39,11 @@ namespace TestPOP
         }
 
         public static List<OpenPop.Mime.Message> FetchUnseenMessages(
-            string hostname, 
-            int port, 
-            bool useSsl, 
-            string username, 
-            string password, 
+            string hostname,
+            int port,
+            bool useSsl,
+            string username,
+            string password,
             List<string> seenUids)
         {
             // The client disconnects from the server when being disposed
@@ -125,6 +128,47 @@ namespace TestPOP
         private void simpleButton2_Click(object sender, EventArgs e)
         {
             DeleteMessageOnServer("pop.yandex.ru", 995, true, "test@e-tiande.by", "test0101", "bfaac90cc38811c94cf67738372c87e6");
+        }
+
+        private void simpleButton3_Click(object sender, EventArgs e)
+        {
+            using (Imap imap = new Imap())
+            {
+                imap.Connect("imap.yandex.ru", 993, true);  // or ConnectSSL for SSL
+                imap.UseBestLogin("test@e-tiande.by", "test0101");
+
+                imap.SelectInbox();
+                List<long> uids = imap.Search(Flag.Unseen);
+
+                foreach (long uid in uids)
+                {
+                    var eml = imap.GetMessageByUID(uid);
+                    IMail email = new MailBuilder()
+                        .CreateFromEml(eml);
+                    Console.WriteLine(email.Subject);
+                    Console.WriteLine(email.Text);
+                }
+                imap.Close();
+            }
+        }
+
+        private void simpleButton4_Click(object sender, EventArgs e)
+        {
+            using (ImapClient client = new ImapClient("imap.yandex.ru", 993, true))
+            {
+                if (client.Connect( /* optional, use parameters here */ ))
+                {
+                    if (client.Login("test@e-tiande.by", "test0101"))
+                    {
+                        var messages = client.Folders["INBOX"].Search("ALL");
+                        string dd = "sdgf";
+                    }
+                }
+                else
+                {
+                    // connection not successful
+                }
+            }
         }
     }
 }
